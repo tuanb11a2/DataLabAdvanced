@@ -1,4 +1,3 @@
-//Nguyen Thanh Trung
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -18,7 +17,7 @@ typedef struct {
 
 void readFile(Graph g,char* filename);
 void printNeighborMatrix(Graph g);
-void printfNeighborMatrixVertex(Graph g);
+void printfNeighborListOfVertex(Graph g);
 void printDirectWalkingNeighbor(Graph g);
 void printMaxIndgreeCastle(Graph g);
 Graph createGraph();
@@ -30,40 +29,142 @@ int indegree(Graph graph, int v, int* output);
 int outdegree(Graph graph, int v, int* output);
 double shortestPath(Graph graph, int s, int t, int *path, int *length);
 void dropGraph(Graph graph);
+void printMenu();
+int findVertex(Graph g,int key);
+JRB jvalToJRB(Jval v);
 
 int main(){
     Graph g = createGraph();
+    int n,i;
 
-    //Case 1:
-    readFile(g,"graph.txt");
-
-    //printNeighborMatrix(g);
-
-    //Case 2:
-    //printfNeighborMatrixVertex(g);
-    
-    //Case 3a:
-    //printDirectWalkingNeighbor(g);
-
-    //Case 3b:
-    //printMaxIndgreeCastle(g);
-
-    //Case 4:
-    int s, t, path[100], length;
-    s = 1;
-    t = 99;
-    double distance_s_t = shortestPath(g, s, t, path, &length);
-    if (distance_s_t != INFINITIVE_VALUE){
-        printf("Shortest distance from s --> t: %lf\n", distance_s_t);
-        printf("Path: ");
-        for (int i=length-1; i>=0; i--){
-            printf("%d ", path[i]);
+    while(1){
+        printMenu();
+        scanf("%d",&n);
+        while(n < 1 || n > 7){
+            printf("Enter again:");
+            scanf("%d",&n);
         }
-        printf("\n");
-    }else{
-        printf("No Path from s --> t\n");
+        if(n == 1){
+            readFile(g,"graph.txt");
+            printNeighborMatrix(g);
+            printf("\n");
+        }
+
+        if(n == 2){
+            printfNeighborListOfVertex(g);
+            printf("\n");
+        }  
+
+        if(n == 3){
+            printDirectWalkingNeighbor(g);
+            printf("\n");
+        }  
+
+        if(n == 4){
+            printMaxIndgreeCastle(g);
+            printf("\n");
+        }  
+
+        if(n == 5){
+            int s, t, path[100], length;
+            printf("Enter start point: ");
+            scanf("%d",&s);
+            if(findVertex(g,s)){
+                printf("Enter end point: ");
+                scanf("%d",&t);
+                if(findVertex(g,t)){
+                    double distance_s_t = shortestPath(g, s, t, path, &length);
+                    if (distance_s_t != INFINITIVE_VALUE){
+                        printf("Shortest distance from %d --> %d: %lf\n",s,t, distance_s_t);
+                        printf("Path: ");
+                        for (int i=length-1; i>=0; i--){
+                            printf("%d ", path[i]);
+                        }
+                        printf("\n");
+                    }else{
+                        printf("Route not found!");
+                    }
+                    printf("\n");
+                }else if(s == t){
+                    printf("Start and end point must be different!\n");
+                }else{
+                    printf("Route not found!\n");
+                }
+            }else{
+                printf("Route not found!\n");
+            }
+        }  
+
+        if(n == 6){
+            JRB tmp;
+            JRB tmp2;
+            Graph walkGraph = createGraph();
+
+            jrb_traverse(tmp,g.edges){
+                //printf("- Castle %d: ",tmp->key);
+                jrb_traverse(tmp2,jvalToJRB(tmp->val)){
+                    if(getEdgeValue(g,(tmp->key).i,(tmp2->key).i) >= 50){
+                        addVertex(walkGraph,(tmp->key).i,"V");
+                        addVertex(walkGraph,(tmp2->key).i,"V");
+
+                        addEdge(walkGraph,(tmp->key).i,(tmp2->key).i,(tmp2->val).d);
+                        addEdge(walkGraph,(tmp2->key).i,(tmp->key).i,(tmp2->val).d);
+                    }
+                }
+            };
+
+
+            
+            int s, t, path[100], length;
+            printf("Enter start point: ");
+            scanf("%d",&s);
+            if(findVertex(walkGraph,s)){
+                printf("Enter end point: ");
+                scanf("%d",&t);
+                if(findVertex(walkGraph,t)){
+                    double distance_s_t = shortestPath(walkGraph, s, t, path, &length);
+                    if (distance_s_t != INFINITIVE_VALUE){
+                        printf("Shortest distance from %d --> %d: %lf\n",s,t, distance_s_t);
+                        printf("Path: ");
+                        for (int i=length-1; i>=0; i--){
+                            printf("%d ", path[i]);
+                        }
+                        printf("\n");
+                    }else{
+                        printf("Route not found!");
+                    }
+                    printf("\n");
+                }else if(s == t){
+                    printf("Start and end point must be different!\n");
+                }else{
+                    printf("Route not found!\n");
+                }
+            }else{
+                printf("Route not found!\n");
+            }
+        } 
+
+        if(n == 7){
+            printf("Exit program!");
+            break;
+        }        
+
     }
+    
 }
+
+void printMenu(){
+    printf("--------------MENU--------------\n");
+    printf("1.Read input and print neighbor matrix\n");
+    printf("2.Print neighbor list of each vertex\n");
+    printf("3.Print vertex list that can only go to that vertex by walk\n");
+    printf("4.Print vertex list that have most neighbor\n");
+    printf("5.Find shortest path\n");
+    printf("6.Find shortest walking path\n");
+    printf("7.Exit\n");
+    printf("--------------------------------\n");
+    printf("Enter your choice:");
+};
 
 void readFile(Graph g, char* filename){
     FILE *fp;
@@ -116,7 +217,7 @@ JRB jvalToJRB(Jval v){
     return (JRB)v.v;
 }
 
-void printfNeighborMatrixVertex(Graph g){
+void printfNeighborListOfVertex(Graph g){
     JRB tmp;
     JRB tmp2;
     jrb_traverse(tmp,g.edges){
@@ -130,6 +231,7 @@ void printfNeighborMatrixVertex(Graph g){
 
 void printDirectWalkingNeighbor(Graph g){
     int boolean; //IF boolean = 1 => can go by horse directly, boolean = 0 => return
+    int count = 0;
     JRB tmp;
     JRB tmp2;
     printf("The castle list go to by walking directly only:");
@@ -145,7 +247,6 @@ void printDirectWalkingNeighbor(Graph g){
         if(boolean == 0){
             printf("%d ",tmp->key);
         }
-        //printf("\n");
     };
     printf("\n");
 
@@ -153,17 +254,21 @@ void printDirectWalkingNeighbor(Graph g){
 
 void printMaxIndgreeCastle(Graph g){
     int max = 0;
-    int list[vertexTotal];
+    int list[vertexTotal]; //Khong nen de variable o day de gay loi
     int count = 0;
     int output[100];
     int n,i;
     JRB tmp;
     JRB tmp2;
+
+    for(i = 0; i < vertexTotal; i++){
+        list[vertexTotal] = 0;
+    }
+
     printf("The castle list has maximum indegree:");
     jrb_traverse(tmp,g.edges){
         n = indegree(g,(tmp->key).i,output);
         if(n > max){
-            count = 0;
             max = n;
             list[count] = (tmp->key).i;
         }else if(n == max){
@@ -172,10 +277,8 @@ void printMaxIndgreeCastle(Graph g){
         }
     };
 
-    for(i = 0; i < vertexTotal; i++){
-        if(list[i] > 0){
-            printf("%d ",list[i]);
-        }
+    for(i = 0; i <= count; i++){
+        printf("%d ",list[i]);
     }
     printf("\n");
 }
@@ -328,4 +431,16 @@ double shortestPath(Graph graph, int s, int t, int *path, int *length){
     }
     *length = ln;
     return distance[t];
+}
+
+
+int findVertex(Graph g,int key){
+    JRB tmp;
+    int flag = 0;
+    jrb_traverse(tmp,g.vertices){
+        if(key == (tmp->key).i){
+            flag = 1;
+        }
+    } 
+    return flag;  
 }
